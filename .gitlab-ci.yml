@@ -1,0 +1,35 @@
+image: ciaochung/ci-nodejs-php
+
+cache:
+  paths:
+    - Frontend/node_modules
+    - Backend/vendor
+
+variables:
+  MYSQL_ROOT_PASSWORD: root
+  MYSQL_USER: gitlab
+  MYSQL_PASSWORD: gitlab
+  MYSQL_DATABASE: gitlabcicd
+  DB_HOST: 127.0.0.1
+
+frontend_test:
+  only:
+    - develop
+  script:
+    - cd Frontend
+    - yarn
+    - yarn unit
+
+backend_test:
+  only:
+    - develop
+  script:
+    - ciao-deploy --command=mysql --password="$MYSQL_ROOT_PASSWORD" --withoutSudo
+    - ciao-deploy --command=mysql-user-create --rootPassword="$MYSQL_ROOT_PASSWORD" --username="$MYSQL_USER" --password="$MYSQL_PASSWORD" --withoutSudo
+    - ciao-deploy --command=mysql-db-create --rootPassword="$MYSQL_ROOT_PASSWORD" --db="$MYSQL_DATABASE" --withoutSudo
+    - cd Backend
+    - composer install
+    - cp .env.example .env
+    - php artisan migrate
+    - ./vendor/bin/phpunit ./tests/
+
